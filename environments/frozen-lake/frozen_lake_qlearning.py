@@ -3,7 +3,6 @@ from __future__ import division
 from matplotlib import pyplot as plt
 
 import numpy as np
-import gym
 import itertools
 import math
 
@@ -14,6 +13,8 @@ logging.basicConfig()
 logger = logging.getLogger('FrozenLake-v0')
 logger.setLevel(logging.INFO)
 
+import gym
+from gym.envs.registration import register
 
 id2a = {
     0:'L',
@@ -99,7 +100,7 @@ def train(params, env):
         if e % 100 == 0:
             logger.info("Episode {}".format(e))
             t += 1e-2
-            logger.info("e {}".format((params['epsilon'] / t)))
+            
 
         curr_state = env.reset()
         game_over = False
@@ -147,23 +148,29 @@ if __name__ == '__main__':
 
     params = {}
     params['epsilon'] = 0.5
-    params['lr'] = 0.1
+    params['lr'] = 0.05
     params['decay_rate'] = 0.9
-    params['decay_steps'] = 10
+    params['decay_steps'] = 50
     params['gamma'] = 0.9
     params['total_episodes'] = 20000
     params['max_steps_per_episode'] = 100
     params['model_path'] = './trained_models/q_table_v1'
 
-    env = gym.make('FrozenLake-v0')
+    
+    register(
+        id='FrozenLakeNotSlippery-v0',
+        entry_point='gym.envs.toy_text:FrozenLakeEnv',
+        kwargs={'map_name': '4x4', 'is_slippery': False},
+        max_episode_steps=100,
+        reward_threshold=0.78,  # optimum = .8196
+    )
+
+    env = gym.make('FrozenLakeNotSlippery-v0')
 
     Q_table, delta = train(params, env)
     V_s, policy = extract_Vs(Q_table, env.observation_space.n)
 
-    logger.info('Q(s,a)')
-    for i in range(0,env.observation_space.n,4):
-        logger.info( np.round(Q_table[i:(i+4)],3) )
-
+    
     logger.info('V(s)')
     for i in range(0,env.observation_space.n,4):
         logger.info( np.round(V_s[i:(i+4)],3) )
