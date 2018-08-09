@@ -86,7 +86,7 @@ def extract_Vs(q_table, n_states):
 def train(params, env):
 
     q_table = np.zeros((env.observation_space.n, env.action_space.n))
-    lr_count = np.zeros((env.observation_space.n, env.action_space.n))
+    lr_count = np.ones((env.observation_space.n, env.action_space.n))
 
     all_actions = range(env.action_space.n)
     logger.info("All actions: {}".format(all_actions))
@@ -98,7 +98,8 @@ def train(params, env):
 
         if e % 100 == 0:
             logger.info("Episode {}".format(e))
-            t += 5e-3
+            t += 1e-2
+            logger.info("e {}".format((params['epsilon'] / t)))
 
         curr_state = env.reset()
         game_over = False
@@ -114,12 +115,10 @@ def train(params, env):
 
             new_state, reward, game_over, info = env.step(action)
 
-            lr_count[curr_state][action] += 1
+            lr_count[curr_state][action] += 5e-2
             lr = exp_decay(params['lr'], params['decay_rate'],
-                              lr_count[curr_state][action], params['decay_steps'])            
+                              lr_count[curr_state][action], params['decay_steps'])                        
             
-            
-
             _, max_qval = max_action(q_table[new_state])
 
             old_sa = q_table[curr_state][action]
@@ -147,10 +146,10 @@ def train(params, env):
 if __name__ == '__main__':
 
     params = {}
-    params['epsilon'] = 0.6
+    params['epsilon'] = 0.5
     params['lr'] = 0.1
-    params['decay_rate'] = 0.96
-    params['decay_steps'] = 50
+    params['decay_rate'] = 0.9
+    params['decay_steps'] = 10
     params['gamma'] = 0.9
     params['total_episodes'] = 20000
     params['max_steps_per_episode'] = 100
@@ -161,9 +160,9 @@ if __name__ == '__main__':
     Q_table, delta = train(params, env)
     V_s, policy = extract_Vs(Q_table, env.observation_space.n)
 
-    # logger.info('Q(s,a)')
-    # for i in range(0,env.observation_space.n,4):
-    #     logger.info( np.round(Q_table[i:(i+4)],3) )
+    logger.info('Q(s,a)')
+    for i in range(0,env.observation_space.n,4):
+        logger.info( np.round(Q_table[i:(i+4)],3) )
 
     logger.info('V(s)')
     for i in range(0,env.observation_space.n,4):
